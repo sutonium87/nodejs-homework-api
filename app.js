@@ -55,6 +55,7 @@ const PORT = process.env.PORT_SERVER || 5000;
 
 // Obtain the MongoDB connection URL from the environment variable 'DB_URL'
 const URL_DB = process.env.DB_URL;
+// updated
 
 // Connect to the MongoDB database using 'mongoose'
 mongoose
