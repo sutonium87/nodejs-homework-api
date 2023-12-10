@@ -169,6 +169,99 @@ module.exports.uploadAvatar = async (req, res, next) => {
     next(error);
   }
 };
+
+// Verify Email Controller
+module.exports.verifyEmailController = async (req, res, next) => {
+  try {
+    // Extract verification token from request parameters
+    const { verificationToken } = req.params;
+
+    // Call the verifyEmail function with the extracted token
+    await verifyEmail(verificationToken);
+
+    // Respond with a success message if verification is successful
+    res
+      .status(200)
+      .json({ message: "Email verified successfully!", code: 200 });
+  } catch (error) {
+    // Handle errors and respond with an error message
+    res.status(404).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
+
+// Function to Verify Email
+const verifyEmail = async (verificationToken) => {
+  try {
+    // Define update parameters for the user document
+    const update = { verify: true, verificationToken: null };
+
+    // Find and update the user document based on the verification token
+    const result = await User.findOneAndUpdate(
+      { verificationToken: verificationToken },
+      { $set: update },
+      { new: true }
+    );
+
+    // Log the result (for debugging purposes)
+    console.log(result);
+
+    // Throw an error if the user is not found
+    if (!result) throw new Error("User not found");
+  } catch (error) {
+    // Log and handle errors within the function
+    console.log(error);
+  }
+};
+
+// Resend Verification Email Controller
+module.exports.resendVerificationEmail = async (req, res) => {
+  // Extract email from the request body
+  const { email } = req.body;
+
+  try {
+    // Check if the email field is missing in the request body
+    if (!email) {
+      return res.status(400).json({ message: "Missing required field email" });
+    }
+
+    // Find the user based on the email
+    const user = await User.findOne({ email });
+
+    // Check if the user exists and is not verified
+    if (user && !user.verify) {
+      // Generate a new verification token
+      const newVerificationToken = uuidv4();
+
+      // Update the verification token in the user document
+      await User.findByIdAndUpdate(user._id, {
+        verificationToken: newVerificationToken,
+      });
+
+      // Send the verification email with the new token
+      await sendVerificationEmail(email, newVerificationToken);
+
+      // Respond with a success message
+      return res.status(200).json({ message: "Verification email resent" });
+    } else if (user && user.verify) {
+      // Return an error if the user is already verified
+      return res
+        .status(400)
+        .json({ message: "Verification has already been passed" });
+    } else {
+      // Return an error if the email is not found
+      return res.status(400).json({ message: "Email not found" });
+    }
+  } catch (error) {
+    // Log and respond with an internal server error in case of an exception
+    console.error("Error resending verification email:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 // In summary the code emphasizes user authentication and includes features like signup, login, logout, user data retrieval, and avatar uploading.
 //  It uses JWT for authentication and handles errors appropriately, providing JSON responses in case of success or failure.
 // The avatar uploading process involves resizing and transforming the image before storing it and updating the user's avatar URL.
+// Email verification is implemented to ensure that users provide valid and accessible email addresses.

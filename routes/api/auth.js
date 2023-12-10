@@ -52,6 +52,12 @@ router.patch(
   authController.uploadAvatar
 );
 
+// Define a route for handling email verification based on the verification token
+router.get("/verify/:verificationToken", authController.verifyEmailController);
+
+// Define a route for resending email verification to the user's email address
+router.post("/verify", authController.resendVerificationEmail);
+
 // Export the router to be used in other parts of the application
 module.exports = router;
 

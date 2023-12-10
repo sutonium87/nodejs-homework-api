@@ -39,6 +39,17 @@ const userSchema = new Schema({
     type: String,
     minLength: 2,
   },
+  // Define a boolean field 'verify' indicating whether the user's email is verified or not
+  verify: {
+    type: Boolean,
+    default: false,
+  },
+
+  // Define a string field 'verificationToken' required for email verification
+  verificationToken: {
+    type: String,
+    required: [true, "Verify token is required"],
+  },
 });
 
 // Middleware to hash the password before saving to the database
