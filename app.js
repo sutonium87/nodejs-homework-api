@@ -1,35 +1,27 @@
-// Import necessary modules for the application
-const express = require("express"); // Express.js for building web applications
-const morgan = require("morgan"); // Morgan for HTTP request logging
-const cors = require("cors"); // CORS for Cross-Origin Resource Sharing
-const dotenv = require("dotenv"); // dotenv for loading environment variables from a .env file
-const mongoose = require("mongoose"); // Mongoose for MongoDB object modeling
+const express = require("express");
+const morgan = require("morgan");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const mongoose = require("mongoose");
 
-// Import the main API router from the specified path
-const routerApi = require("./routes/api/index.js");
-
-// Create an instance of the Express application
-const app = express();
-
-// Load environment variables from the .env file
 dotenv.config();
 
-// Import CORS options from the specified path
 const coreOptions = require("./cors");
 
-// Apply CORS middleware to the Express app using the configured options
-app.use(cors(coreOptions));
+require("./middlewares/passportConfig.js");
 
-// Use Morgan for HTTP request logging in a concise format ("tiny")
+const routerApi = require("./routes/api/index.js");
+const auth = require("./routes/api/auth.js");
+
+const app = express();
+
+app.use(express.json());
+app.use(cors(coreOptions));
 app.use(morgan("tiny"));
 
-// Enable parsing of JSON-encoded bodies in requests
-app.use(express.json());
-
-// Mount the main API router under the "/api" path
 app.use("/api", routerApi);
+app.use("/api/users", auth);
 
-// Middleware to handle requests for unavailable routes, responding with a JSON object indicating a 404 error
 app.use((_, res, __) => {
   res.status(400).json({
     status: "error",
@@ -39,7 +31,6 @@ app.use((_, res, __) => {
   });
 });
 
-// Error handling middleware: log the error stack and respond with a JSON object indicating a 500 Internal Server Error
 app.use((err, _, res, __) => {
   console.log(err.stack);
   res.status(500).json({
@@ -50,29 +41,19 @@ app.use((err, _, res, __) => {
   });
 });
 
-// Set the port for the server to listen on, either using the value from the environment variable 'PORT' or defaulting to 5000
+// DB connection
 const PORT = process.env.PORT_SERVER || 5000;
+const DB_URL = process.env.DB_URL;
 
-// Obtain the MongoDB connection URL from the environment variable 'DB_URL'
-const URL_DB = process.env.DB_URL;
-// updated
-
-// Connect to the MongoDB database using 'mongoose'
 mongoose
-  .connect(URL_DB)
+  .connect(DB_URL)
   .then(() => {
-    // If the database connection is successful, start the Express server and log a success message
-    console.log("Database connection successful");
+    console.log("MongoDB connection successful");
     app.listen(PORT, () => {
       console.log(`Server is running. Use our API on port: ${PORT}`);
     });
   })
   .catch((err) => {
-    // If the database connection fails, log an error and exit the process with an error code
     console.log(`Database connection error. Error:${err.message}`);
     process.exit(1);
   });
-
-// In summary, this code sets up an Express application with middleware for logging, CORS, JSON parsing, and error handling.
-//  It configures routes for the API, handles unavailable routes, and connects to a MongoDB database.
-// The server is then started and listens for incoming requests on the specified port.
